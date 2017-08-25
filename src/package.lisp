@@ -1,5 +1,4 @@
 ;;;; package.lisp
 
-(defpackage #:lox
+(defpackage #:clox
   (:use #:cl))
-
