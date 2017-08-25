@@ -1,4 +1,4 @@
-;;;; lox.asd
+;;;; clox.asd
 
 (asdf:defsystem #:clox
   :description "Common Lisp implementation of Lox language. Following http://www.craftinginterpreters.com"
