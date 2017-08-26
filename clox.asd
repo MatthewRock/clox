@@ -5,15 +5,17 @@
   :author "Mateusz Malisz <maliszmat@gmail.com>"
   :license "MIT"
 
-  :defsystem-depends-on '(:deploy); make build process easier
-  :build-operation "deploy-op"
-  :build-pathname #P"clox"
+  :build-operation program-op
+  :build-pathname #P"bin/clox"
+  :entry-point "clox::main"
 
   :depends-on (:alexandria ; common utils
-               :log4cl ; logging
-               )
+               :log4cl
+               :command-line-arguments)
 
-  :pathname "src"
-  :serial t
-  :components ((:file "package")
-               (:file "main")))
+  :components ((:module
+                "src"
+                :serial t
+                :components
+                ((:file "package")
+                 (:file "main")))))
