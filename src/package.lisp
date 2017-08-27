@@ -5,4 +5,5 @@
 (defpackage :clox
   (:use #:cl
         #:command-line-arguments)
+  (:import-from :serapeum :->)
   (:export :main))

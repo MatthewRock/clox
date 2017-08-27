@@ -11,6 +11,7 @@
 
   :depends-on (:alexandria ; common utils
                :log4cl
+               :serapeum ;; ->
                :command-line-arguments)
 
   :components ((:module
@@ -18,4 +19,7 @@
                 :serial t
                 :components
                 ((:file "package")
+                 (:file "file-utils")
+                 (:file "scanner")
+                 (:file "error-reporter")
                  (:file "main")))))
