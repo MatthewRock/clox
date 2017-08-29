@@ -13,6 +13,7 @@
   (-> report (integer string string) null)
   (defun report (line location message)
     (format *error-output* "[line ~D] Error ~A: ~A~%" line location message)
-    (setf had-error t)))
+    (setf had-error t)
+    nil))
 
 ;; TODO: Show actual place of problem instead of line

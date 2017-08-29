@@ -13,33 +13,42 @@
    :positional-arity 0
    :rest-arity t))
 
+(-> run-clox (list &key (:verbose boolean) (:help boolean)) null)
 (defun run-clox (args &key verbose help)
   (when help
     (clox-help))
+  (when verbose
+    (log4cl:log-info "Clox v. 0.1. Running."))
   (let ((args-len (length args)))
     (cond
       ((> args-len 1) (clox-help))
       ((= 1 args-len) (run-file (first args)))
       (t (run-prompt))))
-  (uiop:quit))
+  (uiop:quit)
+  nil)
 
+(-> clox-help () null)
 (defun clox-help ()
   (show-option-help +command-line-spec+ :sort-names t)
-  (uiop:quit))
+  (uiop:quit)
+  nil)
 
 (-> run-file (string) null)
 (defun run-file (path)
-  (run (load-file-to-string (pathname path))))
+  (run (load-file-to-string (pathname path)))
+  nil)
 
 (-> run-prompt () null)
 (defun run-prompt ()
   (loop do
        (format t "> ")
-       (run (read-line))))
+       (run (read-line)))
+  nil)
 
-(-> run (string) integer)
+(-> run (string) null)
 (defun run (source)
   (loop for token in (scan-tokens source)
      do (format t "~A~%" token))
-  (if (had-error)
-      (uiop:quit -1)))
+  (when (had-error)
+    (uiop:quit -1))
+  nil)
