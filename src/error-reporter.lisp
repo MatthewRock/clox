@@ -6,6 +6,11 @@
   (defun had-error ()
     had-error)
 
+  (-> reset-error-flag () null)
+  (defun reset-error-flag ()
+    (setf had-error nil)
+    nil)
+
   (-> raise-error (integer string) null)
   (defun raise-error (line message)
     (report line "" message))
