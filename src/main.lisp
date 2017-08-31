@@ -1,8 +1,15 @@
 (in-package :clox)
 
+(defparameter *debug* t)
+
 (defparameter +command-line-spec+
   '((("help" #\h #\?) :type boolean :optional t :documentation "Show help.")
     (("verbose" #\v) :type boolean :optional t :documentation "Become verbose, whatever it means.")))
+
+(defun quit (&optional (code 0))
+  (if *debug*
+      (error "I would quit now.")
+      (uiop:quit code)))
 
 (defun main ()
   (handle-command-line
@@ -24,13 +31,13 @@
       ((> args-len 1) (clox-help))
       ((= 1 args-len) (run-file (first args)))
       (t (run-prompt))))
-  (uiop:quit)
+  (quit)
   nil)
 
 (-> clox-help () null)
 (defun clox-help ()
   (show-option-help +command-line-spec+ :sort-names t)
-  (uiop:quit)
+  (quit)
   nil)
 
 (-> run-file (string) null)
@@ -47,8 +54,8 @@
 
 (-> run (string) null)
 (defun run (source)
-  (loop for token in (scan-tokens source)
+  (loop for token across (scan-tokens source)
      do (format t "~A~%" token))
   (when (had-error)
-    (uiop:quit -1))
+    (quit 1))
   nil)
