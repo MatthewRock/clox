@@ -3,7 +3,8 @@
 ;; ;;;;;;;;;;;;;;
 ;; Defining Token
 ;; ;;;;;;;;;;;;;;
-(defconstant +1char-token-associations+
+
+(defparameter +1char-token-associations+
   '((#\( :left-paren)
     (#\) :right-paren)
     (#\{ :left-brace)
@@ -39,13 +40,19 @@
     :eof))
 
 (defclass Token ()
-  ((%type :initarg :type :type token-type)
-   (%lexeme :initarg :lexeme :type string)
-   (%literal :initarg :literal)
-   (%line :initarg :line :type integer)))
+  ((%type :initarg :type :type token-type :reader token-type)
+   (%lexeme :initarg :lexeme :type string :reader token-lexeme)
+   (%literal :initarg :literal :reader token-literal)
+   (%line :initarg :line :type integer :reader token-line)))
+
+(defmethod print-object ((object token) stream)
+  (print-unreadable-object (object stream)
+    (format stream "Token ~A from line ~A with lexeme ~A and literal ~A."
+            (token-type object) (token-line object) (token-lexeme object) (token-literal object))))
 
 (-> token->string (token) string)
 (defun token->string (token)
+  "Return token to a string representation."
   (with-slots (%type %lexeme %literal) token
     (format nil "~A ~A ~A" %type %lexeme %literal)))
 
@@ -86,21 +93,82 @@
   "Advance scanner's pointer."
   (aref (source scanner) (1- (incf (current scanner)))))
 
+(-> match (scanner character) boolean)
+(defun match (scanner expected)
+  "Consume the next character and return T if it is expected character, return NIL otherwise."
+  (unless (or (is-at-end scanner)
+              (char/= (current-character scanner) expected))
+    (incf (current scanner))
+    t))
+
+(-> peek (scanner) character)
+(defun peek (scanner)
+  "Return the next character in the source or NUL if we're at the end."
+  (if (is-at-end scanner)
+      #\Nul
+      (current-character scanner)))
+
 (-> scan-token (scanner) null)
 (defun scan-token (scanner)
   "Add next token from the scanner's source."
-  (bind-tokens-for-scanner scanner #.+1char-token-associations+
-    (advance scanner)))
+  (case (advance scanner)
+    ;; One-character tokens
+    (#\( (add-token scanner :left-paren))
+    (#\) (add-token scanner :right-paren))
+    (#\{ (add-token scanner :left-brace))
+    (#\} (add-token scanner :right-brace))
+    (#\, (add-token scanner :comma))
+    (#\. (add-token scanner :dot))
+    (#\- (add-token scanner :minus))
+    (#\+ (add-token scanner :plus))
+    (#\; (add-token scanner :semicolon))
+    (#\* (add-token scanner :star))
+
+    ;; One-Or-Two-character tokens
+    (#\! (add-token scanner (if (match scanner #\=)
+                                :bang-equal
+                                :bang)))
+    (#\= (add-token scanner (if (match scanner #\=)
+                                :equal-equal
+                                :equal)))
+    (#\< (add-token scanner (if (match scanner #\=)
+                                :less-equal
+                                :less)))
+    (#\> (add-token scanner (if (match scanner #\=)
+                                :greater-equal
+                                :greater)))
+
+    ;; Comments
+    (#\/ (if (match scanner #\/)
+             (process-single-line-comment scanner)
+             (add-token scanner :slash)))
+
+    ;; Ignore whitespace
+    ((#\Space #\Tab #\Return) nil)
+    (#\Linefeed (incf (line scanner)))
+
+    ;; Strings
+    (#\" (process-string scanner))
+
+    (otherwise (raise-error (line scanner) "Unexpected character.")))
+  nil)
 
 (-> scan-tokens (string) vector)
 (defun scan-tokens (input)
   "Scan tokens from input. Return vector of scanned tokens."
   (loop with scanner = (make-instance 'scanner :source input)
-     until (is-at-end scanner) do (scan-token scanner)
-     finally (return (tokens scanner))))
+     until (is-at-end scanner) do
+       (setf (start scanner) (current scanner))
+       (scan-token scanner)
+     finally
+       (return (progn
+                 (setf (start scanner) (current scanner))
+                 (add-token scanner :eof)
+                 (tokens scanner)))))
 
 (-> add-token (scanner token-type &optional t) null)
 (defun add-token (scanner token-type &optional literal)
+  "Add token to the vector of scanned tokens."
   (vector-push-extend
    (make-instance'token :type token-type
                         :lexeme (subseq (source scanner)
@@ -110,3 +178,39 @@
                         :line (line scanner))
    (tokens scanner))
   nil)
+
+(-> current-character (scanner) character)
+(defun current-character (scanner)
+  "Return the current character of the source - the one that will be processed now."
+  (aref (source scanner) (current scanner)))
+
+(defun is-at-newline (scanner)
+  "Return T if scanner is at newline(next character will be \n)."
+  (char= (peek scanner) #\Linefeed))
+
+(-> process-single-line-comment (scanner) null)
+(defun process-single-line-comment (scanner)
+  "Consume contents of until EOL or EOF."
+  (loop until (or (is-at-newline scanner)
+                  (is-at-end scanner))
+     do (advance scanner)))
+
+(-> process-string (scanner) null)
+(defun process-string (scanner)
+  "Consume the string from the current point to the closing double quote."
+  ;; TODO: Add quoted strings inside strings.
+  (loop until (or (char= (peek scanner) #\")
+                  (is-at-end scanner))
+     do (when (is-at-newline scanner)
+          (incf (line scanner)))
+       (advance scanner))
+
+  (when (is-at-end scanner)
+    (raise-error (line scanner) "Unterminated string."))
+
+  ;; The closing "
+  (advance scanner)
+
+  (add-token scanner :string (subseq (source scanner)
+                                     (1+ (start scanner))
+                                     (1- (current scanner)))))
