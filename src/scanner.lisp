@@ -17,6 +17,28 @@
     (#\/ :slash)
     (#\; :semicolon)))
 
+(defparameter +keywords+
+  #.(let ((keywords-alist
+           '(("and" . :and)
+             ("class" . :class)
+             ("else" . :else)
+             ("false" . :false)
+             ("for" . :for)
+             ("fun" . :fun)
+             ("if" . :if)
+             ("nil" . :nil)
+             ("or" . :or)
+             ("print" . :print)
+             ("return" . :return)
+             ("super" . :super)
+             ("this" . :this)
+             ("true" . :true)
+             ("var" . :var)
+             ("while" . :while))))
+      (alexandria:alist-hash-table keywords-alist
+                                   :test #'equal
+                                   :size (length keywords-alist))))
+
 (deftype token-type ()
   `(member
     ;; Single-character tokens
@@ -108,49 +130,63 @@
       #\Nul
       (current-character scanner)))
 
+(-> peek-next (scanner) character)
+(defun peek-next (scanner)
+  "Return the character after the next character in the source or NUL if there's none.'"
+  (if (>= (1+ (current scanner))
+          (length (source scanner)))
+      #\Nul
+      (aref (source scanner)
+            (1+ (current scanner)))))
+
 (-> scan-token (scanner) null)
 (defun scan-token (scanner)
   "Add next token from the scanner's source."
-  (case (advance scanner)
-    ;; One-character tokens
-    (#\( (add-token scanner :left-paren))
-    (#\) (add-token scanner :right-paren))
-    (#\{ (add-token scanner :left-brace))
-    (#\} (add-token scanner :right-brace))
-    (#\, (add-token scanner :comma))
-    (#\. (add-token scanner :dot))
-    (#\- (add-token scanner :minus))
-    (#\+ (add-token scanner :plus))
-    (#\; (add-token scanner :semicolon))
-    (#\* (add-token scanner :star))
+  (let ((currently-processed-character (advance scanner)))
+    (case currently-processed-character
+      ;; One-character tokens
+      (#\( (add-token scanner :left-paren))
+      (#\) (add-token scanner :right-paren))
+      (#\{ (add-token scanner :left-brace))
+      (#\} (add-token scanner :right-brace))
+      (#\, (add-token scanner :comma))
+      (#\. (add-token scanner :dot))
+      (#\- (add-token scanner :minus))
+      (#\+ (add-token scanner :plus))
+      (#\; (add-token scanner :semicolon))
+      (#\* (add-token scanner :star))
 
-    ;; One-Or-Two-character tokens
-    (#\! (add-token scanner (if (match scanner #\=)
-                                :bang-equal
-                                :bang)))
-    (#\= (add-token scanner (if (match scanner #\=)
-                                :equal-equal
-                                :equal)))
-    (#\< (add-token scanner (if (match scanner #\=)
-                                :less-equal
-                                :less)))
-    (#\> (add-token scanner (if (match scanner #\=)
-                                :greater-equal
-                                :greater)))
+      ;; One-Or-Two-character tokens
+      (#\! (add-token scanner (if (match scanner #\=)
+                                  :bang-equal
+                                  :bang)))
+      (#\= (add-token scanner (if (match scanner #\=)
+                                  :equal-equal
+                                  :equal)))
+      (#\< (add-token scanner (if (match scanner #\=)
+                                  :less-equal
+                                  :less)))
+      (#\> (add-token scanner (if (match scanner #\=)
+                                  :greater-equal
+                                  :greater)))
 
-    ;; Comments
-    (#\/ (if (match scanner #\/)
-             (process-single-line-comment scanner)
-             (add-token scanner :slash)))
+      ;; Comments
+      (#\/ (if (match scanner #\/)
+               (process-single-line-comment scanner)
+               (add-token scanner :slash)))
 
-    ;; Ignore whitespace
-    ((#\Space #\Tab #\Return) nil)
-    (#\Linefeed (incf (line scanner)))
+      ;; Ignore whitespace
+      ((#\Space #\Tab #\Return) nil)
+      (#\Linefeed (incf (line scanner)))
 
-    ;; Strings
-    (#\" (process-string scanner))
+      ;; Strings
+      (#\" (process-string scanner))
 
-    (otherwise (raise-error (line scanner) "Unexpected character.")))
+      (otherwise
+       (cond
+         ((is-digit currently-processed-character) (process-number-literal scanner))
+         ((is-alpha currently-processed-character) (process-identifier scanner))
+         (t (raise-error (line scanner) "Unexpected character."))))))
   nil)
 
 (-> scan-tokens (string) vector)
@@ -214,3 +250,47 @@
   (add-token scanner :string (subseq (source scanner)
                                      (1+ (start scanner))
                                      (1- (current scanner)))))
+
+(-> is-digit (character) boolean)
+(defun is-digit (char)
+  "Return T if char is digit, NIL otherwise."
+  (and (char>= char #\0)
+       (char<= char #\9)))
+
+(-> is-alpha (character) boolean)
+(defun is-alpha (char)
+  "Return T if char is a latin letter or underscore, NIL otherwise."
+  (or (and (char>= #\Z char)
+           (char<= #\A char))
+      (and (char>= #\z char)
+           (char<= #\a char))
+      (char= char #\_)))
+
+(-> is-alphanumeric (character) boolean)
+(defun is-alphanumeric (char)
+  (or (is-alpha char)
+      (is-digit char)))
+
+(-> process-number-literal (scanner) null)
+(defun process-number-literal (scanner)
+  "Process a number literal and return T, or return NIL and don't process anything if the token isn't number literal."
+  (loop while (is-digit (peek scanner)) do (advance scanner))
+  (when (and (char= (peek scanner) #\.)
+             (is-digit (peek-next scanner)))
+    ;; Consume the dot
+    (advance scanner)
+    (loop while (is-digit (peek scanner)) do (advance scanner)))
+  (add-token scanner :number (read-from-string
+                              (subseq (source scanner)
+                                      (start scanner)
+                                      (current scanner)))))
+
+(-> process-identifier (scanner) null)
+(defun process-identifier (scanner)
+  (loop while (is-alphanumeric (peek scanner)) do (advance scanner))
+
+  (add-token scanner
+             (gethash
+              (print (subseq (source scanner) (start scanner) (current scanner)))
+              +keywords+
+              :identifier)))
