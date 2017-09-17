@@ -1,4 +1,4 @@
-(in-package :clox)
+(in-package :clox-utils)
 
 (-> load-file-to-string (pathname) string)
 (defun load-file-to-string (path)

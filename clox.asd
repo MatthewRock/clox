@@ -18,8 +18,14 @@
                 "src"
                 :serial t
                 :components
-                ((:file "package")
-                 (:file "file-utils")
+                ((:module
+                  "utils"
+                  :serial t
+                  :components
+                  ((:file "package")
+                   (:file "file")
+                   (:file "ast-generator")))
+                 (:file "package")
                  (:file "scanner")
                  (:file "error-reporter")
                  (:file "main")))))
