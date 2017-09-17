@@ -1,15 +1,19 @@
-* error-reporter
-** TODO Show the actual place of problem instead of just line.
-** TODO Write some better interface/mechanism for errors(maybe use CL's built-in one?)
-* file-utils
-** DONE Move file-utils to utils directory
-   CLOSED: [2017-09-17 Sun 22:29]
-* main
-** TODO Add better mechanism for *debug* handling
-* scanner
-** TODO Add more documentation
-** TODO Maybe refactor the code with macros
-** TODO Add docstrings
-* utils
-** ast-generator
-*** TODO Write ast-generator
+* code
+** error-reporter
+*** TODO Show the actual place of problem instead of just line.
+*** TODO Write some better interface/mechanism for errors(maybe use CL's built-in one?)
+** file-utils
+*** DONE Move file-utils to utils directory
+    CLOSED: [2017-09-17 Sun 22:29]
+** main
+*** TODO Add better mechanism for *debug* handling
+** scanner
+*** TODO Add more documentation
+*** TODO Maybe refactor the code with macros
+*** TODO Add docstrings
+** utils
+*** ast-generator
+**** TODO Write ast-generator
+* repository
+** CI
+*** Add TravisCI code.
