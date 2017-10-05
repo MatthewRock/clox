@@ -1,22 +1,29 @@
 (in-package :clox)
 
-(let ((had-error nil))
+(define-condition clox-error (error)
+  ((line :initarg :line :reader line)
+   (message :reader message))
+  (:report (lambda (err stream)
+             (format stream "[line ~D] ~A: ~A~%" (line err) (clox-error-name err) (message err)))))
 
-  (-> had-error () boolean)
-  (defun had-error ()
-    had-error)
+(defmethod initialize-instance :after ((obj clox-error) &key &allow-other-keys)
+  (when (eq (class-of obj) (find-class 'clox-error))
+    (error "~S is an abstract class and can't be instantiated." obj)))
 
-  (-> reset-error-flag () null)
-  (defun reset-error-flag ()
-    (setf had-error nil)
-    nil)
+(defmethod clox-error-name ((obj clox-error))
+  (string-capitalize (type-of obj)))
 
-  (-> raise-error (integer string) null)
-  (defun raise-error (line message)
-    (report line "" message))
+(define-condition unexpected-character-error (clox-error)
+  ((message :initform "Unexpected character found." )))
 
-  (-> report (integer string string) null)
-  (defun report (line location message)
-    (format *error-output* "[line ~D] Error ~A: ~A~%" line location message)
-    (setf had-error t)
-    nil))
+(define-condition unterminated-string-error (clox-error)
+  ((message :initform "The string has not been terminated.")))
+
+(defmacro handle-scanner-errors (error-flag &body body)
+  "Evaluate BODY, setting error-flag to T if any error is encountered and reporting it, but invoking CONTINUE."
+  `(handler-bind ((clox-error
+                    (lambda (condition)
+                      (format *error-output* "~A" condition)
+                      ,(if (eq error-flag nil) nil `(setf ,error-flag t))
+                      (continue))))
+     ,@body))

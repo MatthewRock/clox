@@ -101,9 +101,9 @@
        ,@(loop for (char token-type) in tokens
             collect `(,char
                       (add-token ,scanner ,token-type)))
-       (otherwise (raise-error
-                   (line ,scanner)
-                   "Unexpected character.")))))
+       (otherwise (cerror "Continue scanning."
+                          'unexpected-character-error
+                          :line (line ,scanner))))))
 
 (-> is-at-end (scanner) boolean)
 (defun is-at-end (scanner)
@@ -186,7 +186,9 @@
        (cond
          ((is-digit currently-processed-character) (process-number-literal scanner))
          ((is-alpha currently-processed-character) (process-identifier scanner))
-         (t (raise-error (line scanner) "Unexpected character."))))))
+         (t (cerror "Continue scanning."
+                    'unexpected-character-error
+                    :line (line scanner)))))))
   nil)
 
 (-> scan-tokens (string) vector)
@@ -242,7 +244,9 @@
        (advance scanner))
 
   (when (is-at-end scanner)
-    (raise-error (line scanner) "Unterminated string."))
+    (cerror "Continue scanning."
+            'unterminated-string-error
+            :line (line scanner)))
 
   ;; The closing "
   (advance scanner)

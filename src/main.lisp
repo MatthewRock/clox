@@ -25,7 +25,7 @@
   (when help
     (clox-help))
   (when verbose
-    (log4cl:log-info "Clox v. 0.1. Running."))
+    (log4cl:log-info "Clox v. 0.2. Running."))
   (let ((args-len (length args)))
     (cond
       ((> args-len 1) (clox-help))
@@ -42,20 +42,20 @@
 
 (-> run-file (string) null)
 (defun run-file (path)
-  (run (load-file-to-string (pathname path)))
-  nil)
+  (run (load-file-to-string (pathname path))))
 
 (-> run-prompt () null)
 (defun run-prompt ()
   (loop do
        (format t "> ")
-       (run (read-line)))
-  nil)
+       (run (read-line))))
 
 (-> run (string) null)
 (defun run (source)
-  (loop for token across (scan-tokens source)
-     do (format t "~A~%" token))
-  (when (had-error)
-    (quit 1))
-  nil)
+  (loop
+    with had-error = nil
+    for token across
+              (handle-scanner-errors had-error
+                (scan-tokens source))
+    do (format t "~A~%" token)
+    finally (when had-error (quit 1))))
