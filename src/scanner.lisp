@@ -19,22 +19,22 @@
 
 (defparameter +keywords+
   #.(let ((keywords-alist
-           '(("and" . :and)
-             ("class" . :class)
-             ("else" . :else)
-             ("false" . :false)
-             ("for" . :for)
-             ("fun" . :fun)
-             ("if" . :if)
-             ("nil" . :nil)
-             ("or" . :or)
-             ("print" . :print)
-             ("return" . :return)
-             ("super" . :super)
-             ("this" . :this)
-             ("true" . :true)
-             ("var" . :var)
-             ("while" . :while))))
+            '(("and" . :and)
+              ("class" . :class)
+              ("else" . :else)
+              ("false" . :false)
+              ("for" . :for)
+              ("fun" . :fun)
+              ("if" . :if)
+              ("nil" . :nil)
+              ("or" . :or)
+              ("print" . :print)
+              ("return" . :return)
+              ("super" . :super)
+              ("this" . :this)
+              ("true" . :true)
+              ("var" . :var)
+              ("while" . :while))))
       (alexandria:alist-hash-table keywords-alist
                                    :test #'equal
                                    :size (length keywords-alist))))
@@ -47,17 +47,17 @@
     :comma :dot :minus :plus :star :slash :semicolon
 
     ;; One or two character tokens
-    :bang :bang-equal
-    :equal :equal-equal
-    :greater :greater-equal
-    :less :less-equal
+                :bang :bang-equal
+                :equal :equal-equal
+                :greater :greater-equal
+                :less :less-equal
 
-    ;; Literals
-    :identifier :string :number
+                ;; Literals
+                :identifier :string :number
 
-    ;; Keywords.
+                ;; Keywords.
     :and :class :else :false :fun :for :if :nil :or
-    :print :return :super :this :true :var :while
+                :print :return :super :this :true :var :while
 
     :eof))
 
@@ -143,8 +143,8 @@
     `(case (progn
              ,@input)
        ,@(loop for (char token-type) in tokens
-            collect `(,char
-                      (add-token ,scanner ,token-type)))
+               collect `(,char
+                         (add-token ,scanner ,token-type)))
        (otherwise (cerror "Continue scanning."
                           'unexpected-character-error
                           :line (line ,scanner)
@@ -241,14 +241,14 @@
 (defun scan-tokens (input)
   "Scan tokens from input. Return vector of scanned tokens."
   (loop with scanner = (make-instance 'scanner :source input)
-     until (is-at-end scanner) do
-       (move-start-to-current scanner)
-       (scan-token scanner)
-     finally
-       (return (progn
-                 (move-start-to-current scanner)
-                 (add-token scanner :eof)
-                 (tokens scanner)))))
+        until (is-at-end scanner) do
+          (move-start-to-current scanner)
+          (scan-token scanner)
+        finally
+           (return (progn
+                     (move-start-to-current scanner)
+                     (add-token scanner :eof)
+                     (tokens scanner)))))
 
 (-> add-token (scanner token-type &optional t) null)
 (defun add-token (scanner token-type &optional literal)
@@ -277,7 +277,7 @@
   "Consume contents of until EOL or EOF."
   (loop until (or (is-at-newline scanner)
                   (is-at-end scanner))
-     do (advance scanner)))
+        do (advance scanner)))
 
 (-> process-string (scanner) null)
 (defun process-string (scanner)
@@ -342,6 +342,6 @@
   (loop while (is-alphanumeric (peek scanner)) do (advance scanner))
   (add-token scanner
              (gethash
-              (print (subseq (source scanner) (start scanner) (current scanner)))
+              (subseq (source scanner) (start scanner) (current scanner))
               +keywords+
               :identifier)))
