@@ -82,16 +82,60 @@
 ;; Defining Scanner
 ;; ;;;;;;;;;;;;;;;;
 
+(defclass Position-Marker ()
+  ((%line :type integer :initform 1 :accessor line :initarg :line)
+   (%line-position :type integer :initform 0 :accessor line-position :initarg :line-position)
+   (%global-position :type integer :initform 0 :accessor global-position :initarg :global-position)))
+
+(-> copy-position-marker (position-marker) position-marker)
+(defun copy-position-marker (position-marker)
+  (make-instance 'position-marker
+                 :line (line position-marker)
+                 :line-position (line-position position-marker)
+                 :global-position (global-position position-marker)))
+
 (defclass Scanner ()
   ((%source :type string :initarg :source :reader source)
    (%tokens :type vector :initarg :tokens :accessor tokens)
-   (%start :type integer :initform 0 :accessor start)
-   (%current :type integer :initform 0 :accessor current)
-   (%line :type integer :initform 1 :accessor line))
+   (%starting-position :initarg :starting-position :type position-marker :accessor starting-position)
+   (%current-position :initarg :current-position :type position-marker :accessor current-position))
   (:default-initargs
-   :source "" :tokens (make-array '(50)
-                                  :element-type 'token
-                                  :adjustable t :fill-pointer 0)))
+   :source ""
+   :tokens (make-array '(50)
+                       :element-type 'token
+                       :adjustable t :fill-pointer 0)
+   :starting-position (make-instance 'position-marker)
+   :current-position (make-instance 'position-marker)))
+
+(defgeneric current (thing)
+  (:documentation "Get the current global position of a THING."))
+
+(defgeneric line (thing)
+  (:documentation "Get the line number of current THING position."))
+
+(defmethod start ((obj scanner))
+  (global-position (starting-position obj)))
+
+(defmethod current ((obj scanner))
+  (global-position (current-position obj)))
+
+(defmethod line ((obj scanner))
+  (line (current-position obj)))
+
+(-> move-forward (scanner) integer)
+(defun move-forward (obj)
+  "Move OBJ forward destructively modifying it."
+  ;; If we entered new line, reset the line position
+  (if (is-at-newline obj)
+      (progn
+        (setf (line-position (current-position obj)) 0)
+        (incf (line (current-position obj))))
+      (incf (line-position (current-position obj))))
+  (incf (global-position (current-position obj))))
+
+(-> move-start-to-current (scanner) null)
+(defun move-start-to-current (scanner)
+  (setf (starting-position scanner) (copy-position-marker (current-position scanner))))
 
 (defmacro bind-tokens-for-scanner (scanner tokens &body input)
   "Bind tokens together and process the same token as INPUT."
@@ -103,7 +147,8 @@
                       (add-token ,scanner ,token-type)))
        (otherwise (cerror "Continue scanning."
                           'unexpected-character-error
-                          :line (line ,scanner))))))
+                          :line (line ,scanner)
+                          :place (start ,scanner))))))
 
 (-> is-at-end (scanner) boolean)
 (defun is-at-end (scanner)
@@ -112,15 +157,15 @@
 
 (-> advance (scanner) character)
 (defun advance (scanner)
-  "Advance scanner's pointer."
-  (aref (source scanner) (1- (incf (current scanner)))))
+  "Advance scanner's pointer and return the character at that point."
+  (aref (source scanner) (1- (move-forward scanner))))
 
 (-> match (scanner character) boolean)
 (defun match (scanner expected)
   "Consume the next character and return T if it is expected character, return NIL otherwise."
   (unless (or (is-at-end scanner)
               (char/= (current-character scanner) expected))
-    (incf (current scanner))
+    (move-forward scanner)
     t))
 
 (-> peek (scanner) character)
@@ -170,14 +215,13 @@
                                   :greater-equal
                                   :greater)))
 
-      ;; Comments
+      ;; Process Comments
       (#\/ (if (match scanner #\/)
                (process-single-line-comment scanner)
                (add-token scanner :slash)))
 
-      ;; Ignore whitespace
-      ((#\Space #\Tab #\Return) nil)
-      (#\Linefeed (incf (line scanner)))
+      ;; Ignore whitespace. Newline is processed automatically when moving position
+      ((#\Space #\Tab #\Return #\Linefeed) nil)
 
       ;; Strings
       (#\" (process-string scanner))
@@ -188,7 +232,9 @@
          ((is-alpha currently-processed-character) (process-identifier scanner))
          (t (cerror "Continue scanning."
                     'unexpected-character-error
-                    :line (line scanner)))))))
+                    :character currently-processed-character
+                    :line (line scanner)
+                    :place (start scanner)))))))
   nil)
 
 (-> scan-tokens (string) vector)
@@ -196,11 +242,11 @@
   "Scan tokens from input. Return vector of scanned tokens."
   (loop with scanner = (make-instance 'scanner :source input)
      until (is-at-end scanner) do
-       (setf (start scanner) (current scanner))
+       (move-start-to-current scanner)
        (scan-token scanner)
      finally
        (return (progn
-                 (setf (start scanner) (current scanner))
+                 (move-start-to-current scanner)
                  (add-token scanner :eof)
                  (tokens scanner)))))
 
@@ -236,24 +282,26 @@
 (-> process-string (scanner) null)
 (defun process-string (scanner)
   "Consume the string from the current point to the closing double quote."
-  ;; TODO: Add quoted strings inside strings.
-  (loop until (or (char= (peek scanner) #\")
-                  (is-at-end scanner))
-     do (when (is-at-newline scanner)
-          (incf (line scanner)))
-       (advance scanner))
+  (flet ((add-string (scanner)
+           (add-token scanner :string
+                      (subseq (source scanner)
+                              (1+ (start scanner))
+                              (1- (current scanner))))))
 
-  (when (is-at-end scanner)
-    (cerror "Continue scanning."
-            'unterminated-string-error
-            :line (line scanner)))
+    (loop until (or (char= (peek scanner) #\")
+                    (is-at-end scanner))
+          do (advance scanner))
 
-  ;; The closing "
-  (advance scanner)
-
-  (add-token scanner :string (subseq (source scanner)
-                                     (1+ (start scanner))
-                                     (1- (current scanner)))))
+    ;; If String's not terminated
+    (if (is-at-end scanner)
+        ;; Report it
+        (cerror "Continue scanning"
+                'unterminated-string-error
+                :line (line scanner)
+                :place (start scanner))
+        ;; Consume the closing "
+        (advance scanner))
+    (add-string scanner)))
 
 (-> is-digit (character) boolean)
 (defun is-digit (char)
@@ -292,7 +340,6 @@
 (-> process-identifier (scanner) null)
 (defun process-identifier (scanner)
   (loop while (is-alphanumeric (peek scanner)) do (advance scanner))
-
   (add-token scanner
              (gethash
               (print (subseq (source scanner) (start scanner) (current scanner)))
