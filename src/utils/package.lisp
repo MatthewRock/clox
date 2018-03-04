@@ -2,4 +2,5 @@
 
 (defpackage :clox-utils
   (:use #:cl)
-  (:import-from :serapeum :->))
+  (:import-from :serapeum :->)
+  (:export :load-file-to-string))
