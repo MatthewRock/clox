@@ -76,16 +76,14 @@
          (class-constructor-from-rule rule :naming naming-convention
                                            :ast name))))
 
-
-;; TODO: Fix naming issue with keyword arguments: :naming and :ast
-(-> class-definition-from-rule (list &key (naming naming-convention) (ast (or string symbol))) list)
+(-> class-definition-from-rule (list &key (:naming naming-convention) (:ast (or string symbol))) list)
 (defun class-definition-from-rule (rule &key naming ast)
   "Return class definition for AST following the NAMING convention."
   (let ((class-name (class-name-from-rule rule :naming naming :ast ast)))
     `(defclass ,class-name (,ast)
        ,(class-slots-from-rule rule))))
 
-(-> class-constructor-from-rule (list &key (naming naming-convention) (ast (or string symbol))) list)
+(-> class-constructor-from-rule (list &key (:naming naming-convention) (:ast (or string symbol))) list)
 (defun class-constructor-from-rule (rule &key naming ast)
   "Return a function with the name identical as a class generated from the rule,
 which serves as a constructor for the class instance."
