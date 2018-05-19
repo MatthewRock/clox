@@ -1,22 +1,17 @@
 (in-package :clox-utils)
 
+;; TODO: Add tests for AST generator
+
 ;; ast-generator package
 ;; The book uses the Java tool that transforms some data into the code.
-;; This is a hack that is the result of Java's lack of expressiveness.
-;; Lisp has a built-in tool - macro - which solves this problem,, so we'll generate the DSL
-;; within the Lisp.
+;; The solution is a workaround to the Java's lack of higher level metaprogramming, unlike Lisp's macros.
 
 ;; The Java version utilizes the Java type system by creating class hierarchy,
 ;; which in turn allows for compile-time validation of certain operations.
 ;; CLOS isn't static (compiler might still infer some types and signal warnings/errors)
 ;; but I believe that proper class hierarchy would help during debugging.
 
-;; The AST generator has to do N things:
-
-;; 1. Take an AST as an input
-;; 2. Generate a valid hierarchy of types as an output
-;; 3. Provide static typing at compile time, at least partially
-;; 4. Provide pretty printing of AST.
+;; TODO: Look around for ways of improving this solution to work better during compile-time.
 
 ;; (defast Expr (:append-to :end)
 ;;   (Binary -> (Expr left) (Token operator) (Expr right))
