@@ -13,29 +13,45 @@
 
 ;; TODO: Look around for ways of improving this solution to work better during compile-time.
 
-;; (defast Expr (:append-to :end)
-;;   (Binary -> (Expr left) (Token operator) (Expr right))
-;;   (Grouping -> (Expr expression))
+;; (defast Expr ()
+;;   (Binary -> (left Expr) (operator Token) (right Expr))
+;;   (Grouping -> (expression Expr))
 ;;   (Literal -> value) ; the value has the type T
-;;   (Unary -> (Token operator) (Expr right)))
+;;   (Unary -> (operator Token) (right Expr)))
 
-;; ->
+;; Expands to:
 
+;; -----------------------------------------------------------------------------
 ;; (defclass Expr () ())
 
-;; (defclass BinaryExpr (Expr)
-;;   (left :type 'Expr)
-;;   (operator :type 'Token)
-;;   (right :type 'Expr))
+;; (defclass Binaryexpr (Expr)
+;;   ((left :accessor left :initarg :left :type Expr)
+;;    (operator :accessor operator :initarg :operator :type token)
+;;    (right :accessor right :initarg :right :type Expr)))
 
-;; (defun BinaryExpr (left operator right)
-;;   (make-instance
-;;    'BinaryExpr
-;;    :left left
-;;    :operator operator
-;;    :right right))
+;; (defun Binaryexpr (left operator right)
+;;   (make-instance 'Binaryexpr :left left :operator operator :right right))
+
+;; (defclass Groupingexpr (Expr)
+;;   ((expression :accessor expression :initarg :expression :type Expr)))
+
+;; (defun Groupingexpr (Expression)
+;;   (make-instance 'Groupingexpr :expression expression))
+
+;; (defclass Literalexpr (Expr) ((value :accessor value :initarg :value)))
+
+;; (defun Literalexpr (value) (make-instance 'Literalexpr :value value))
+
+;; (defclass Unaryexpr (Expr)
+;;   ((operator :accessor operator :initarg :operator :type token)
+;;    (right :accessor right :initarg :right :type Expr)))
+
+;; (defun Unaryexpr (operator right)
+;;   (make-instance 'Unaryexpr :operator operator :right right)))
+;; -----------------------------------------------------------------------------
 
 
+;; TODO: Catch and ReSignal an error about clash of reserved by standard and user-defined names arising from accessors or function definitions.
 ;; TODO: Improve defast to be able to split ast definition to more files (?)
 
 (-> base-class-definition (symbol) list)
