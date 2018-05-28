@@ -6,9 +6,12 @@
   '((("help" #\h #\?) :type boolean :optional t :documentation "Show help.")
     (("verbose" #\v) :type boolean :optional t :documentation "Become verbose, whatever it means.")))
 
+(defparameter *clox-version* 0.2)
+
 (defun quit (&optional (code 0))
   (if *debug*
-      (error "I would quit now.")
+      (restart-case (error "I would quit now.")
+        (quit () (uiop:quit (if (zerop code) -1 code))))
       (uiop:quit code)))
 
 (defun main ()
@@ -25,7 +28,7 @@
   (when help
     (clox-help))
   (when verbose
-    (log4cl:log-info "Clox v. 0.2. Running."))
+    (log4cl:log-info "Clox v. ~A. Running." *clox-version*))
   (let ((args-len (length args)))
     (cond
       ((> args-len 1) (clox-help))
