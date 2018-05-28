@@ -3,4 +3,11 @@
 (defpackage :clox-utils
   (:use #:cl)
   (:import-from :serapeum :->)
-  (:export :load-file-to-string))
+  (:export
+
+   ;; file
+   :load-file-to-string
+
+   ;; ast-generator
+   :defast
+   :naming-convention))

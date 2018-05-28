@@ -28,4 +28,5 @@
                  (:file "package")
                  (:file "scanner")
                  (:file "error-reporter")
+                 (:file "ast-printer")
                  (:file "main")))))

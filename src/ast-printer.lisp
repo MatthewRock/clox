@@ -1,4 +1,4 @@
-(in-package :clox-utils)
+(in-package :clox)
 
 (defclass ast-printer () ())
 
@@ -11,17 +11,17 @@
   (:documentation "Convert THING into parnethesized form using a PRINTER's way to do it."))
 
 (defast Expr ()
-        (Binary -> (left Expr) (operator clox::Token) (right Expr))
+        (Binary -> (left Expr) (operator Token) (right Expr))
         (Grouping -> (expression Expr))
         (Literal -> value)
-        (Unary -> (operator clox::Token) (right Expr)))
+        (Unary -> (operator Token) (right Expr)))
 
 (defmethod pretty-print ((printer ugly-ast-printer) thing)
   (format t "~A" (parenthesize printer thing)))
 
 (defmethod parenthesize ((printer ugly-ast-printer) (thing BinaryExpr))
   (format nil "(~A ~A ~A)"
-          (clox::token-lexeme
+          (token-lexeme
            (operator thing))
           (parenthesize printer (left thing))
           (parenthesize printer (right thing))))
@@ -33,7 +33,7 @@
   (format nil "~A" (value thing)))
 
 (defmethod parenthesize ((printer ugly-ast-printer) (thing UnaryExpr))
-  (format nil "(~A ~A)" (clox::token-lexeme (operator thing)) (parenthesize printer (right thing))))
+  (format nil "(~A ~A)" (token-lexeme (operator thing)) (parenthesize printer (right thing))))
 
 (defmethod parenthesize ((printer ugly-ast-printer) thing)
   (format nil "~A" thing))
@@ -42,13 +42,13 @@
 ;;  (make-instance 'ugly-ast-printer)
 ;;  (binaryexpr
 ;;   (unaryexpr
-;;    (make-instance 'clox::token
+;;    (make-instance 'token
 ;;                   :type :minus
 ;;                   :lexeme "-"
 ;;                   :literal nil
 ;;                   :line 1)
 ;;    (literalexpr 123))
-;;   (make-instance 'clox::token
+;;   (make-instance 'token
 ;;                  :type :star
 ;;                  :lexeme "*"
 ;;                  :literal nil

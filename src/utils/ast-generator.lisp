@@ -62,7 +62,9 @@
 
 (deftype naming-convention ()
   '(member
+    :lisp-postfix                    ; Append the base class name to the end with a dash character in between.
     :postfix                         ; Append the base class name to the end
+    :lisp-prefix                     ; Append the base class name to the beginning with a dash character in between.
     :prefix                          ; Append the base class name to the beginning.
     :none                            ; Don't append the base class name.
     ))
@@ -121,7 +123,9 @@ which serves as a constructor for the class instance."
         (rule-class-name (car rule)))
     (ecase naming
       ((:none) rule-class-name)
+      ((:lisp-postfix) (intern (format nil "~@:(~A-~A~)" rule-class-name base-class-name)))
       ((:postfix) (intern (format nil "~@:(~A~A~)" rule-class-name base-class-name)))
+      ((:lisp-prefix)  (intern (format nil "~@:(~A-~A~)" base-class-name rule-class-name)))
       ((:prefix)  (intern (format nil "~@:(~A~A~)" base-class-name rule-class-name))))))
 
 (-> class-slots-from-rule (list) list)
