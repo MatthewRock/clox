@@ -10,7 +10,7 @@
 (defgeneric parenthesize (printer thing)
   (:documentation "Convert THING into parnethesized form using a PRINTER's way to do it."))
 
-(defast Expr ()
+(defast Expr (:naming-convention :lisp-postfix)
         (Binary -> (left Expr) (operator Token) (right Expr))
         (Grouping -> (expression Expr))
         (Literal -> value)
