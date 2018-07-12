@@ -19,20 +19,20 @@
 (defmethod pretty-print ((printer ugly-ast-printer) thing)
   (format t "~A" (parenthesize printer thing)))
 
-(defmethod parenthesize ((printer ugly-ast-printer) (thing BinaryExpr))
+(defmethod parenthesize ((printer ugly-ast-printer) (thing binary-expr))
   (format nil "(~A ~A ~A)"
           (token-lexeme
            (operator thing))
           (parenthesize printer (left thing))
           (parenthesize printer (right thing))))
 
-(defmethod parenthesize ((printer ugly-ast-printer) (thing GroupingExpr))
+(defmethod parenthesize ((printer ugly-ast-printer) (thing grouping-expr))
   (format nil "(group ~A)" (parenthesize printer (expression thing))))
 
-(defmethod parenthesize ((printer ugly-ast-printer) (thing LiteralExpr))
+(defmethod parenthesize ((printer ugly-ast-printer) (thing literal-expr))
   (format nil "~A" (value thing)))
 
-(defmethod parenthesize ((printer ugly-ast-printer) (thing UnaryExpr))
+(defmethod parenthesize ((printer ugly-ast-printer) (thing unary-expr))
   (format nil "(~A ~A)" (token-lexeme (operator thing)) (parenthesize printer (right thing))))
 
 (defmethod parenthesize ((printer ugly-ast-printer) thing)
