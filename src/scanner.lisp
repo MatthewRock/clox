@@ -72,6 +72,9 @@
     (format stream "Token ~A from line ~A with lexeme ~A and literal ~A."
             (token-type object) (token-line object) (token-lexeme object) (token-literal object))))
 
+(defgeneric is-at-end (processor)
+  (:documentation "Return a value indicating whether a PROCESSOR is at the end or not."))
+
 (-> token->string (token) string)
 (defun token->string (token)
   "Return token to a string representation."
@@ -150,11 +153,9 @@
                           :line (line ,scanner)
                           :place (start ,scanner))))))
 
-(-> is-at-end (scanner) boolean)
-(defun is-at-end (scanner)
+(defmethod is-at-end ((scanner Scanner))
   "Return T if scanner reached EOF, nil otherwise."
   (>= (current scanner) (length (source scanner))))
-
 (-> advance (scanner) character)
 (defun advance (scanner)
   "Advance scanner's pointer and return the character at that point."
