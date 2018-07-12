@@ -1,11 +1,17 @@
 (in-package :clox)
 
+(define-condition keyword-argument-missing-error (error)
+  ((field-name :initarg :field-name :reader field-name))
+  (:report (lambda (err stream)
+             (format stream "Keyword argument ~A is required, but has not been supplied."
+                     (field-name err)))))
+
 (define-condition clox-error (error)
   ((line :initarg :line :reader line)
    (message :reader clox-error-message)
    (place :reader place :initform -1 :initarg :place))
   (:report (lambda (err stream)
-             (format stream "[line ~D : ~D] ~A: ~A~%" (line err) (place err)
+             (format stream "[line ~D : ~A] ~A: ~A~%" (line err) (place err)
                      (clox-error-name err) (clox-error-message err)))))
 
 (defmethod initialize-instance :after ((obj clox-error) &key &allow-other-keys)
