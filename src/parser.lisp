@@ -4,19 +4,27 @@
   ;; Add initarg for message
   ((message :initarg :message)))
 
-(defmethod initialize-instance :after ((err clox-parser-error)
-                                       &key (token (error 'keyword-argument-missing-error
-                                                          :field-name 'token)))
-  (setf (slot-value err 'line) (token-line token))
-  (if (eql :eof (token-type token))
-      (setf place "at the end")
-      (setf place (format nil "at '~A'" (token-lexeme token)))))
+(defun clox-parser-error (&key (token (error 'keyword-argument-missing-error
+                                             :field-name 'token))
+                            message)
+
+  (error 'clox-parser-error :line (token-line token)
+                            :place (if (eql :eof (token-type token))
+                                       "at the end"
+                                       (format nil "at '~A'" (token-lexeme token)))
+                            :message message))
 
 (defclass Parser ()
   ((%tokens :type vector :initarg :tokens :accessor tokens)
    (%current-position :initarg :current-position :type integer :accessor current-position))
   (:default-initargs
    :current-position 0))
+
+
+(-> parse (parser) (or expr nil))
+(defun parse (parser)
+  (handler-case (expression parser)
+    (clox-parser-error () nil)))
 
 ;; TODO: Revise the architecture to get rid of passing parser everywhere.
 
@@ -51,21 +59,37 @@
 (defun parser-check (parser token-type)
   (log4cl:log-info "Checking for ~A, and token: ~A" token-type
                    (token-type (parser-current parser)))
-  (print (and (not (is-at-end parser))
-              (equal token-type (token-type (parser-current parser))))))
+  (and (not (is-at-end parser))
+       (equal token-type (token-type (parser-current parser)))))
 
 (-> parser-match (parser list) boolean)
 (defun parser-match (parser args)
   (when (some (alexandria:curry #'parser-check parser) args)
     (and (parser-advance parser) t)))
 
-(-> consume (parser token-type string) token)
+(-> parser-consume (parser token-type string) token)
 (defun parser-consume (parser token-type message)
   (if (parser-check parser token-type)
       (parser-advance parser)
-      (error 'parse-error
+      (clox-parser-error
              :token (parser-current parser)
              :message message)))
+
+(-> parser-synchronize (parser) nil)
+(defun parser-synchronize (parser)
+  ;; Discard the erroneous token
+  (parser-advance parser)
+
+  ;; Discard tokens until the end of the statement:
+  (loop until (or
+               (is-at-end parser)       ; statement ends at EOF
+               (equal (token-type (parser-previous parser)) :semicolon) ; or at semicolon
+               ;; There might be no semicolon, so we also stop at the next keyword.
+               (some (alexandria:curry #'equal (token-type (parser-current parser)))
+                     (list :class :fun :var
+                           :for :if :while
+                           :print :return)))
+        do (parser-advance parser)))
 
 (defrule (expression)
   (equality parser))

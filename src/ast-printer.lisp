@@ -17,7 +17,8 @@
         (Unary -> (operator Token) (right Expr)))
 
 (defmethod pretty-print ((printer ugly-ast-printer) thing)
-  (format t "~A" (parenthesize printer thing)))
+  (format t "~A~%" (parenthesize printer thing))
+  (force-output))
 
 (defmethod parenthesize ((printer ugly-ast-printer) (thing binary-expr))
   (format nil "(~A ~A ~A)"
