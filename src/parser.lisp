@@ -92,7 +92,15 @@
         do (parser-advance parser)))
 
 (defrule (expression)
-  (equality parser))
+  (comma-expression parser))
+
+(defrule (comma-expression)
+  (loop with expr = (equality parser)
+        while (match :comma)
+        for operator = (previous)
+        for right = (equality parser) do
+          (setf expr (binary-expr expr operator right))
+        finally (return expr)))
 
 (defrule (equality)
   (loop with expr = (comparison parser)
