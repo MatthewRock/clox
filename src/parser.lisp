@@ -20,7 +20,6 @@
   (:default-initargs
    :current-position 0))
 
-
 (-> parse (parser) (or expr nil))
 (defun parse (parser)
   (handler-case (expression parser)
@@ -70,7 +69,9 @@
 (-> parser-consume (parser token-type string) token)
 (defun parser-consume (parser token-type message)
   (if (parser-check parser token-type)
-      (parser-advance parser)
+      (progn
+        (parser-advance parser)
+        (parser-previous parser))
       (clox-parser-error
              :token (parser-current parser)
              :message message)))
