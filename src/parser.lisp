@@ -1,5 +1,8 @@
 (in-package :clox)
 
+;; TODO: Change advance, match etc. to be generic functions, implement as methods
+;; for parser and scanner.
+
 (define-condition clox-parser-error (clox-error)
   ;; Add initarg for message
   ((message :initarg :message)))
@@ -93,7 +96,18 @@
         do (parser-advance parser)))
 
 (defrule (expression)
-  (comma-expression parser))
+  (ternary-expression parser))
+
+(defrule (ternary-expression)
+  (let ((expr (comma-expression parser)))
+    (when (match :question-mark)
+      (let ((question-operator (previous))
+            (true-expr (ternary-expression parser))
+            (comma-operator (consume :colon "Ternary operator clauses must be separated by a colon (':')"))
+            (false-expr (ternary-expression parser)))
+        (setf expr (ternary-expr expr question-operator
+                                 true-expr comma-operator false-expr))))
+    expr))
 
 (defrule (comma-expression)
   (loop with expr = (equality parser)

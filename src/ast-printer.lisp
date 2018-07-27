@@ -11,6 +11,7 @@
   (:documentation "Convert THING into parnethesized form using a PRINTER's way to do it."))
 
 (defast Expr (:naming-convention :lisp-postfix)
+        (Ternary -> (question Expr) (operator Token) (result-true Expr) (separator Token) (result-false Expr))
         (Binary -> (left Expr) (operator Token) (right Expr))
         (Grouping -> (expression Expr))
         (Literal -> value)
@@ -19,6 +20,14 @@
 (defmethod pretty-print ((printer ugly-ast-printer) thing)
   (format t "~A~%" (parenthesize printer thing))
   (force-output))
+
+(defmethod parenthesize ((printer ugly-ast-printer) (thing ternary-expr))
+  (format nil "(~A ~A (~A ~A ~A))"
+          (token-lexeme (operator thing))
+          (parenthesize printer (question thing))
+          (token-lexeme (separator thing))
+          (parenthesize printer (result-true thing))
+          (parenthesize printer (result-false thing))))
 
 (defmethod parenthesize ((printer ugly-ast-printer) (thing binary-expr))
   (format nil "(~A ~A ~A)"
