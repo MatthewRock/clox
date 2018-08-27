@@ -164,4 +164,57 @@
     ((match :number :string) (literal-expr (token-literal (previous))))
     ((match :left-paren) (let ((expr (expression parser)))
                            (consume :right-paren "Expect ')' after an expression.")
-                           (grouping-expr expr)))))
+                           (grouping-expr expr)))
+    (t (let ((result (error-binary-operator parser)))
+         ;; Might be NIL if we can't assign any error.
+         result))))
+
+(defrule (error-binary-operator)
+  (or (error-comma-expression parser)
+      (error-equality parser)
+      (error-comparison parser)
+      (error-addition parser)
+      (error-multiplication parser)))
+
+(defun missing-first-arg-in-binary-error (token message)
+  (restart-case
+      (clox-parser-error :token token
+                         :message (format nil "~A with no left-hand side argument encountered." message))
+    (ignore () :report "Ignore the error and continue parsing."
+      nil)))
+
+;; TODO: FINISH HIM
+(defrule (error-comma-expression)
+  (when (match :comma)
+    (let ((operator (previous))
+          (right (equality parser)))
+      (missing-first-arg-in-binary-error operator "Comma expression")
+      (broken-binary-expr operator right))))
+
+(defrule (error-equality)
+  (when (match :bang-equal :equal-equal)
+    (let ((operator (previous))
+          (right (comparison parser)))
+      (missing-first-arg-in-binary-error operator "Equality expression")
+      (broken-binary-expr operator right))))
+
+(defrule (error-comparison)
+  (when (match :greater :greater-equal :less :less-equal)
+    (let ((operator (previous))
+          (right (addition parser)))
+      (missing-first-arg-in-binary-error operator "Comparison expression")
+      (broken-binary-expr operator right))))
+
+(defrule (error-addition)
+  (when (match :minus :plus)
+    (let ((operator (previous))
+          (right (multiplication parser)))
+      (missing-first-arg-in-binary-error operator "Addition expression")
+      (broken-binary-expr operator right))))
+
+(defrule (error-multiplication)
+  (when (match :slash :star)
+    (let ((operator (previous))
+          (right (unary parser)))
+      (missing-first-arg-in-binary-error operator "Multiplication expression")
+      (broken-binary-expr operator right))))
