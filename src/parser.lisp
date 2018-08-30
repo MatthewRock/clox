@@ -3,10 +3,6 @@
 ;; TODO: Change advance, match etc. to be generic functions, implement as methods
 ;; for parser and scanner.
 
-(define-condition clox-parser-error (clox-error)
-  ;; Add initarg for message
-  ((message :initarg :message)))
-
 (defun clox-parser-error (&key (token (error 'keyword-argument-missing-error
                                              :field-name 'token))
                             message)

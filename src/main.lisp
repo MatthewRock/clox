@@ -61,7 +61,7 @@
        (tokens (handle-scanner-errors had-error
                  (scan-tokens source)))
        (parser (make-instance 'parser :tokens tokens))
-       (expression (expression parser)))
+       (expression (handle-parser-errors (expression parser))))
     (when had-error (quit 1))
     (pretty-print (make-instance 'ugly-ast-printer)
                   expression)))

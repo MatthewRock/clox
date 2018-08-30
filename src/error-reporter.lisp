@@ -30,6 +30,10 @@
 (define-condition unterminated-string-error (clox-error)
   ((message :initform "The string has not been terminated.")))
 
+(define-condition clox-parser-error (clox-error)
+  ;; Add initarg for message
+  ((message :initarg :message)))
+
 (defmacro handle-scanner-errors (error-flag &body body)
   "Evaluate BODY, setting error-flag to T if any error is encountered and reporting it, but invoking CONTINUE."
   `(handler-bind ((clox-error
@@ -40,4 +44,14 @@
                       (let ((continue-restart (find-restart 'continue)))
                         (when continue-restart
                           (invoke-restart continue-restart))))))
+     ,@body))
+
+(defmacro handle-parser-errors (&body body)
+  `(handler-bind ((clox-parser-error
+                    (lambda (condition)
+                      (format *error-output* "~A" condition)
+                      ;; Invoke IGNORE if it exists.
+                      (let ((restart (find-restart 'ignore)))
+                        (when restart
+                          (invoke-restart restart))))))
      ,@body))
