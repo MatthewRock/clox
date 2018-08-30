@@ -234,7 +234,7 @@
       (process-identifier scanner)
       (cerror "Continue scanning."
               'unexpected-character-error
-              :character currently-processed-character
+              :character (current-character scanner)
               :line (line scanner)
               :place (start scanner))))
 
