@@ -10,14 +10,6 @@
 (defgeneric parenthesize (printer thing)
   (:documentation "Convert THING into parnethesized form using a PRINTER's way to do it."))
 
-(defast Expr (:naming-convention :lisp-postfix)
-        (Ternary -> (question Expr) (operator Token) (result-true Expr) (separator Token) (result-false Expr))
-        (Binary -> (left Expr) (operator Token) (right Expr))
-        (Broken-Binary -> (operator Token) (right Expr))
-        (Grouping -> (expression Expr))
-        (Literal -> value)
-        (Unary -> (operator Token) (right Expr)))
-
 (defmethod pretty-print ((printer ugly-ast-printer) thing)
   (format t "~A~%" (parenthesize printer thing))
   (force-output))
