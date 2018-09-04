@@ -30,4 +30,5 @@
                  (:file "error-reporter")
                  (:file "ast-printer")
                  (:file "parser")
+                 (:file "interpreter")
                  (:file "main")))))
