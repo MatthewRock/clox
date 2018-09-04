@@ -53,7 +53,7 @@
        (format t "> ")
        (run (read-line))))
 
-(-> run (string) null)
+(-> run (string) t)
 (defun run (source)
   (log:config :error)
   (let*
@@ -64,4 +64,5 @@
        (expression (handle-parser-errors (expression parser))))
     (when had-error (quit 1))
     (pretty-print (make-instance 'ugly-ast-printer)
-                  expression)))
+                  expression)
+    expression))
