@@ -111,4 +111,5 @@ clauses - list (keyword symbol)"
        (:less-equal <=))
      (ecase operator-type
        (:bang-equal (not-equal left right))
-       (:equal-equal (equal left right))))))
+       (:equal-equal (equal left right))
+       (:comma right)))))
