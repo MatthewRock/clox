@@ -35,7 +35,8 @@
   (:documentation "Signal runtime error if right is not a number."))
 
 (defmethod check-number-operand (operator right)
-  (error 'clox-runtime-error :token operator :message "Right operand is not a number."))
+  (error 'clox-runtime-error :token operator
+                             :message (format nil "Right operand is not a number : ~S" right)))
 
 (defmethod check-number-operand (operator (right number))
   t)
