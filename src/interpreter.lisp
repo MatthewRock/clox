@@ -16,13 +16,19 @@
 (defgeneric is-truthy (thing)
   (:documentation "Return T if the THING is truthy, NIL otherwise."))
 
-(defgeneric add (left right)
-  (:documentation "Add LEFT and RIGHT, operation depending on the type."))
+(defgeneric add (operator left right)
+  (:documentation "Add LEFT and RIGHT, operation depending on the type. OPERATOR is passed to provide meaningful error in case of type error."))
 
-(defmethod add ((left string) (right string))
+(defmethod add (operator left right)
+  (error 'clox-runtime-error :token operator
+                             :message (format nil
+                                              "Both operands have to be either number or string.~%Left=~S ; Right = ~S"
+                                              left right)))
+
+(defmethod add (operator (left string) (right string))
   (concatenate 'string left right))
 
-(defmethod add ((left number) (right number))
+(defmethod add (operator (left number) (right number))
   (+ left right))
 
 (defgeneric check-number-operand (operator right)
@@ -102,7 +108,6 @@ clauses - list (keyword symbol)"
     (or
      (typed-binary-expression-case operator left right
        (:minus -)
-       (:plus add)
        (:slash /)
        (:star *)
        (:greater >)
@@ -110,6 +115,7 @@ clauses - list (keyword symbol)"
        (:less <)
        (:less-equal <=))
      (ecase operator-type
+       (:plus (add operator left right))
        (:bang-equal (not-equal left right))
        (:equal-equal (equal left right))
        (:comma right)))))
