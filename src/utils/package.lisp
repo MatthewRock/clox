@@ -5,6 +5,9 @@
   (:import-from :serapeum :->)
   (:export
 
+   ;; misc
+   :not-equal
+
    ;; file
    :load-file-to-string
 

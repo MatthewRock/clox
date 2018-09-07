@@ -23,6 +23,7 @@
                   :serial t
                   :components
                   ((:file "package")
+                   (:file "misc")
                    (:file "file")
                    (:file "ast-generator")))
                  (:file "package")
