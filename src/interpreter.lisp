@@ -2,8 +2,8 @@
 
 ;; Since this is CL version and not Java,
 ;; we have to define different bijection between the types
-;; We cannot treat Lox's nil the same as the CL's nil because
-;; Lox's nil does not imply false, whereas CL's does.
+;; We will treat Lox's nil the same as the CL's nil because
+;; Lox's nil does imply false, same as  CL's.
 ;; Lox type - CL type
 ;; nil - null (equivalent to nil)
 ;; boolean - Boolean (T + NIL)
@@ -25,6 +25,51 @@
 (defmethod add ((left number) (right number))
   (+ left right))
 
+(defgeneric check-number-operand (operator right)
+  (:documentation "Signal runtime error if right is not a number."))
+
+(defmethod check-number-operand (operator right)
+  (error 'clox-runtime-error :token operator :message "Right operand is not a number."))
+
+(defmethod check-number-operand (operator (right number))
+  t)
+
+(defgeneric check-number-operands (operator left right)
+  (:documentation "Signal runtime error if any of the operands is not a number."))
+
+(defmethod check-number-operands (operator (left number) (right number))
+  t)
+
+(defmethod check-number-operands (operator (left number) right)
+  (error 'clox-runtime-error :token operator
+                             :message (format nil "Left operand is not a number.~%Left=~S" left)))
+
+(defmethod check-number-operands (operator left (right number))
+  (error 'clox-runtime-error :token operator
+                             :message (format nil "Right operand is not a number.~%Right=~S" right) ))
+
+(defmethod check-number-operands (operator left right)
+  (error 'clox-runtime-error :token operator
+                             :message (format nil
+                                              "Left and right operand are not a number.~%Left = ~S ; Right = ~S"
+                                              left right)))
+
+;; TODO: Ask on the IRC: Why do I have to define it BEFORE the method?
+
+(defmacro typed-binary-expression-case (operator left right &body clauses)
+  "Call proper function provided by CLAUSES depending on the OPERATOR (its token). Clauses look like (TOKEN-NAME FUNCTION-NAME). The names of the LEFT and RIGHT are passed as arguments.
+
+Types:
+operator - Token
+left - Symbol
+right - Symbol
+clauses - list (keyword symbol)"
+  `(case (token-type ,operator)
+     ,@(loop for (token-name function-name) in clauses
+             collecting `(,token-name
+                          (check-number-operands ,operator ,left ,right)
+                          (,function-name ,left, right)))))
+
 ;; Purely cosmetic for now
 ;; Will hold environment in the future
 (defclass interpreter () ())
@@ -40,22 +85,30 @@
   (value expression))
 
 (defmethod evaluate ((expression unary-expr))
-  (let ((right (evaluate (right expression))))
-    (case (token-type (operator expression))
-      (:minus (- right))
+  (let* ((right (evaluate (right expression)))
+         (operator (operator expression))
+         (operator-type (token-type operator)))
+    (case operator-type
+      (:minus
+       (check-number-operand operator right)
+       (- right))
       (:bang (not (is-truthy right))))))
 
 (defmethod evaluate ((expression binary-expr))
-  (let ((left (evaluate (left expression)))
-        (right (evaluate (right expression))))
-    (case (token-type (operator expression))
-      (:minus (- left right))
-      (:plus (add left right))
-      (:slash (/ left right))
-      (:star (* left right))
-      (:greater (> left right))
-      (:greater-equal (>= left right))
-      (:less (< left right))
-      (:less-equal (<= left right))
-      (:bang-equal (not (equal left right)))
-      (:equal-equal (equal left right)))))
+  (let* ((left (evaluate (left expression)))
+         (right (evaluate (right expression)))
+         (operator (operator expression))
+         (operator-type (token-type operator)))
+    (or
+     (typed-binary-expression-case operator left right
+       (:minus -)
+       (:plus add)
+       (:slash /)
+       (:star *)
+       (:greater >)
+       (:greater-equal >=)
+       (:less <)
+       (:less-equal <=))
+     (ecase operator-type
+       (:bang-equal (not-equal left right))
+       (:equal-equal (equal left right))))))
