@@ -113,3 +113,9 @@ clauses - list (keyword symbol)"
        (:bang-equal (not-equal left right))
        (:equal-equal (equal left right))
        (:comma right)))))
+
+(defmethod evaluate ((expression ternary-expr))
+  (ecase (token-type (operator expression))
+    (:question-mark (if (evaluate (question expression))
+                        (evaluate (result-true expression))
+                        (evaluate (result-false expression))))))
