@@ -112,20 +112,22 @@ clauses - list (keyword symbol)"
          (right (evaluate (right expression)))
          (operator (operator expression))
          (operator-type (token-type operator)))
-    (or
-     (typed-binary-expression-case operator left right
-       (:minus -)
-       (:slash /)
-       (:star *)
-       (:greater >)
-       (:greater-equal >=)
-       (:less <)
-       (:less-equal <=))
-     (ecase operator-type
-       (:plus (add operator left right))
-       (:bang-equal (not-equal left right))
-       (:equal-equal (equal left right))
-       (:comma right)))))
+    (handler-case
+        (or
+         (typed-binary-expression-case operator left right
+           (:minus -)
+           (:slash /)
+           (:star *)
+           (:greater >)
+           (:greater-equal >=)
+           (:less <)
+           (:less-equal <=))
+         (ecase operator-type
+           (:plus (add operator left right))
+           (:bang-equal (not-equal left right))
+           (:equal-equal (equal left right))
+           (:comma right)))
+      (division-by-zero () (error 'clox-runtime-error :token operator :message "Division by zero.")))))
 
 (defmethod evaluate ((expression ternary-expr))
   (ecase (token-type (operator expression))
