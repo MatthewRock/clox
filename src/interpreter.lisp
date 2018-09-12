@@ -126,3 +126,22 @@ clauses - list (keyword symbol)"
     (:question-mark (if (evaluate (question expression))
                         (evaluate (result-true expression))
                         (evaluate (result-false expression))))))
+
+(defgeneric stringify (thing)
+  (:documentation "Convert THING to printable form (does not have to be string)"))
+
+(defmethod stringify (thing)
+  thing)
+
+(defmethod stringify ((thing ratio))
+  (coerce thing 'double-float))
+
+(defmethod stringify ((thing double-float))
+  (multiple-value-bind (num reminder) (floor thing)
+    (if (zerop reminder)
+        num
+        thing)))
+
+(-> interpret (expr) t)
+(defun interpret (expression)
+  (format nil "~A" (stringify (evaluate expression))))

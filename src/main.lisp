@@ -45,7 +45,8 @@
 
 (-> run-file (string) null)
 (defun run-file (path)
-  (run (load-file-to-string (pathname path))))
+  (handler-case (run (load-file-to-string (pathname path)))
+    (clox-runtime-error () (quit 70))))
 
 (-> run-prompt () null)
 (defun run-prompt ()
@@ -62,7 +63,5 @@
                  (scan-tokens source)))
        (parser (make-instance 'parser :tokens tokens))
        (expression (handle-parser-errors (expression parser))))
-    (when had-error (quit 1))
-    (pretty-print (make-instance 'ugly-ast-printer)
-                  expression)
-    expression))
+    (when had-error (quit 65))
+    (interpret expression)))
