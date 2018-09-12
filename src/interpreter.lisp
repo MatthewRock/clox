@@ -31,6 +31,12 @@
 (defmethod add (operator (left number) (right number))
   (+ left right))
 
+(defmethod add (operator (left string) (right number))
+  (add left (stringify right)))
+
+(defmethod add (operator (left number) (right string))
+  (add (stringify left) right))
+
 (defgeneric check-number-operand (operator right)
   (:documentation "Signal runtime error if right is not a number."))
 
