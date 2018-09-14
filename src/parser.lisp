@@ -19,9 +19,9 @@
   (:default-initargs
    :current-position 0))
 
-(-> parse (parser) (or expr nil))
+(-> parse (parser) (list (or stmt)))
 (defun parse (parser)
-  (handler-case (expression parser)
+  (handler-case (loop until (is-at-end parser) collecting (statement parser))
     (clox-parser-error () nil)))
 
 ;; TODO: Revise the architecture to get rid of passing parser everywhere.
@@ -90,6 +90,27 @@
                            :for :if :while
                            :print :return)))
         do (parser-advance parser)))
+
+(defrule (statement)
+  (if (match :print)
+      (print-statement parser)
+      (expression-statement parser)))
+
+(defrule (print-statement)
+  ;; Print-stmt does not do anything but create an instance of a class
+  ;; With the expression as its value.
+  ;; Therefore it should not fail unless parsing expression fails too
+  ;; (in which case we simply propagate the error)
+  ;; But placing it over the expression rather than a whole prog1
+  ;; saves us from passing a broken value to the print-stmt.
+  (prog1
+      (print-stmt (expression parser))
+    (consume :semicolon "Expected ';' after a value.")))
+
+(defrule (expression-statement)
+  (prog1
+      (expression-stmt (expression parser))
+    (consume :semicolon "Expected ';' after an expression.")))
 
 (defrule (expression)
   (ternary-expression parser))
