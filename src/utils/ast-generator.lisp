@@ -69,7 +69,7 @@
     :none                            ; Don't append the base class name.
     ))
 
-(defmacro defast (name (&key (naming-convention :postfix)) &rest rules)
+(defmacro defast (name (&key (naming-convention :postfix)) &body rules)
   "Define class hierarchy for AST with name NAME.
 \The AST class are defined basing on the RULES, which are of the form:
 \(RuleName -> value1 value2) and so on. The values would have a type T assumed. Another allowed form is:
