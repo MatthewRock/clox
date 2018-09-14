@@ -19,7 +19,8 @@
   (:default-initargs
    :current-position 0))
 
-(-> parse (parser) (list (or stmt)))
+(-> parse (parser) list)
+
 (defun parse (parser)
   (handler-case (loop until (is-at-end parser) collecting (statement parser))
     (clox-parser-error () nil)))
@@ -200,7 +201,6 @@
     (ignore () :report "Ignore the error and continue parsing."
       nil)))
 
-;; TODO: FINISH HIM
 (defrule (error-comma-expression)
   (when (match :comma)
     (let ((operator (previous))
