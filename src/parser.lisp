@@ -7,11 +7,13 @@
                                              :field-name 'token))
                             message)
 
-  (error 'clox-parser-error :line (token-line token)
-                            :place (if (eql :eof (token-type token))
-                                       "at the end"
-                                       (format nil "at '~A'" (token-lexeme token)))
-                            :message message))
+  (restart-case
+      (error 'clox-parser-error :line (token-line token)
+                                :place (if (eql :eof (token-type token))
+                                           "at the end"
+                                           (format nil "at '~A'" (token-lexeme token)))
+                                :message message)
+    (ignore () "Ignore the error and continue parsing.")))
 
 (defclass Parser ()
   ((%tokens :type vector :initarg :tokens :accessor tokens)
@@ -22,8 +24,7 @@
 (-> parse (parser) list)
 
 (defun parse (parser)
-  (handler-case (loop until (is-at-end parser) collecting (statement parser))
-    (clox-parser-error () nil)))
+  (loop until (is-at-end parser) collecting (statement parser)))
 
 ;; TODO: Revise the architecture to get rid of passing parser everywhere.
 
