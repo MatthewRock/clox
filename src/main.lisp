@@ -58,10 +58,14 @@
 (defun run (source)
   (log:config :error)
   (let*
-      (had-error
-       (tokens (handle-scanner-errors had-error
+      (had-scanner-error
+       had-parser-error
+       (tokens (handle-scanner-errors had-scanner-error
                  (scan-tokens source)))
        (parser (make-instance 'parser :tokens tokens))
-       (expression (handle-parser-errors (expression parser))))
-    (when had-error (quit 65))
-    (interpret expression)))
+       (statements (handle-parser-errors had-parser-error
+                     (parse parser))))
+    (cond
+      (had-scanner-error (quit 60))
+      (had-parser-error (quit 61))
+      (t (interpret statements)))))

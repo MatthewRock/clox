@@ -68,10 +68,11 @@
                           (invoke-restart continue-restart))))))
      ,@body))
 
-(defmacro handle-parser-errors (&body body)
+(defmacro handle-parser-errors (error-flag &body body)
   `(handler-bind ((clox-parser-error
                     (lambda (condition)
                       (format *error-output* "~A" condition)
+                      (setf ,error-flag t)
                       ;; Invoke IGNORE if it exists.
                       (let ((restart (find-restart 'ignore)))
                         (when restart
