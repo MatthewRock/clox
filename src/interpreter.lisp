@@ -135,6 +135,16 @@ clauses - list (keyword symbol)"
                         (evaluate (result-true expression))
                         (evaluate (result-false expression))))))
 
+(defmethod evaluate ((expression expression-stmt))
+  (progn
+    (evaluate (expression expression))
+    nil))
+
+(defmethod evaluate ((expression print-stmt))
+  (format t "~A" (stringify (evaluate (expression expression))))
+  nil)
+
+
 (defgeneric stringify (thing)
   (:documentation "Convert THING to printable form (does not have to be string)"))
 
@@ -150,6 +160,6 @@ clauses - list (keyword symbol)"
         num
         thing)))
 
-(-> interpret (expr) t)
-(defun interpret (expression)
-  (format nil "~A" (stringify (evaluate expression))))
+(-> interpret (list) t)
+(defun interpret (statements)
+  (loop for statement in statements do (evaluate statement)))
