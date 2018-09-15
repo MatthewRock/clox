@@ -142,6 +142,7 @@ clauses - list (keyword symbol)"
 
 (defmethod evaluate ((expression print-stmt))
   (format t "~A" (stringify (evaluate (expression expression))))
+  (force-output)
   nil)
 
 

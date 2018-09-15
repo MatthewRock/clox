@@ -51,7 +51,8 @@
 (-> run-prompt () null)
 (defun run-prompt ()
   (loop do
-       (format t "> ")
+       (format t "~&> ")
+       (force-output)
        (run (read-line))))
 
 (-> run (string) t)
