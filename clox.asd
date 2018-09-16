@@ -32,5 +32,6 @@
                  (:file "ast")
                  (:file "ast-printer")
                  (:file "parser")
+                 (:file "environment")
                  (:file "interpreter")
                  (:file "main")))))
