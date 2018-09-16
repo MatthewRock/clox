@@ -10,8 +10,8 @@
 ;; number - Number
 ;; string - String
 
-(defgeneric evaluate (expression)
-  (:documentation "Evaluate THING."))
+(defgeneric evaluate (interpreter thing)
+  (:documentation "Evaluate THING using INTERPRETER."))
 
 (defgeneric is-truthy (thing)
   (:documentation "Return T if the THING is truthy, NIL otherwise."))
@@ -83,9 +83,9 @@ clauses - list (keyword symbol)"
                           (check-number-operands ,operator ,left ,right)
                           (,function-name ,left, right)))))
 
-;; Purely cosmetic for now
-;; Will hold environment in the future
-(defclass interpreter () ())
+(defclass interpreter ()
+  ((environment :initarg :environment :accessor environment))
+  (:default-initargs :environment (make-instance 'environment)))
 
 ;; NULL, NIL and false all evaluate to NIL and are the only false values for Lox.
 (defmethod is-truthy ((thing (eql nil)))
@@ -94,11 +94,11 @@ clauses - list (keyword symbol)"
 (defmethod is-truthy (thing)
   t)
 
-(defmethod evaluate ((expression literal-expr))
+(defmethod evaluate (_ (expression literal-expr))
   (value expression))
 
-(defmethod evaluate ((expression unary-expr))
-  (let* ((right (evaluate (right expression)))
+(defmethod evaluate ((interpreter interpreter) (expression unary-expr))
+  (let* ((right (evaluate interpreter (right expression)))
          (operator (operator expression))
          (operator-type (token-type operator)))
     (case operator-type
@@ -107,9 +107,9 @@ clauses - list (keyword symbol)"
        (- right))
       (:bang (not (is-truthy right))))))
 
-(defmethod evaluate ((expression binary-expr))
-  (let* ((left (evaluate (left expression)))
-         (right (evaluate (right expression)))
+(defmethod evaluate ((interpreter interpreter) (expression binary-expr))
+  (let* ((left (evaluate interpreter (left expression)))
+         (right (evaluate interpreter (right expression)))
          (operator (operator expression))
          (operator-type (token-type operator)))
     (handler-case
@@ -129,22 +129,30 @@ clauses - list (keyword symbol)"
            (:comma right)))
       (division-by-zero () (error 'clox-runtime-error :token operator :message "Division by zero.")))))
 
-(defmethod evaluate ((expression ternary-expr))
+(defmethod evaluate ((interpreter interpreter) (expression ternary-expr))
   (ecase (token-type (operator expression))
-    (:question-mark (if (evaluate (question expression))
-                        (evaluate (result-true expression))
-                        (evaluate (result-false expression))))))
+    (:question-mark (if (evaluate interpreter (question expression))
+                        (evaluate interpreter (result-true expression))
+                        (evaluate interpreter (result-false expression))))))
 
-(defmethod evaluate ((expression expression-stmt))
+(defmethod evaluate ((interpreter interpreter) (statement expression-stmt))
   (progn
-    (evaluate (expression expression))
+    (evaluate interpreter (expression statement))
     nil))
 
-(defmethod evaluate ((expression print-stmt))
-  (format t "~A" (stringify (evaluate (expression expression))))
+(defmethod evaluate ((interpreter interpreter) (statement print-stmt))
+  (format t "~A" (stringify (evaluate interpreter (expression statement))))
   (force-output)
   nil)
 
+(defmethod evaluate ((interpreter interpreter) (statement var-stmt))
+  (let ((value (evaluate interpreter (initializer statement)))
+        (name (token-lexeme (name statement))))
+    (define-variable (environment interpreter) name value)
+    nil))
+
+(defmethod evaluate ((interpreter interpreter) (expression variable-expr))
+  (get-variable (environment interpreter) (name expression)))
 
 (defgeneric stringify (thing)
   (:documentation "Convert THING to printable form (does not have to be string)"))
@@ -161,6 +169,6 @@ clauses - list (keyword symbol)"
         num
         thing)))
 
-(-> interpret (list) t)
-(defun interpret (statements)
-  (loop for statement in statements do (evaluate statement)))
+(-> interpret (interpreter list) t)
+(defun interpret (interpreter statements)
+  (loop for statement in statements do (evaluate interpreter statement)))

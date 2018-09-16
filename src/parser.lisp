@@ -24,7 +24,7 @@
 (-> parse (parser) list)
 
 (defun parse (parser)
-  (loop until (is-at-end parser) collecting (statement parser)))
+  (loop until (is-at-end parser) collecting (clox-declaration parser)))
 
 ;; TODO: Revise the architecture to get rid of passing parser everywhere.
 
@@ -92,6 +92,23 @@
                            :for :if :while
                            :print :return)))
         do (parser-advance parser)))
+
+;; Clox-declaration is used because "declaration" is a reserved keyword.
+(defrule (clox-declaration)
+  (handler-case (if (match :var)
+                    (var-declaration parser)
+                    (statement parser))
+    (clox-parser-error () (progn
+                            (parser-synchronize parser)
+                            nil))))
+
+(defrule (var-declaration)
+  (let ((name (consume :identifier "Expected a variable name."))
+        (initializer (if (match :equal)
+                         (expression parser)
+                         nil)))
+    (consume :semicolon "Expected ';' after a variable declaration")
+    (var-stmt name initializer)))
 
 (defrule (statement)
   (if (match :print)
@@ -181,6 +198,7 @@
     ((match :true) (literal-expr t))
     ((match :nil) (literal-expr nil))
     ((match :number :string) (literal-expr (token-literal (previous))))
+    ((match :identifier) (variable-expr (previous)))
     ((match :left-paren) (let ((expr (expression parser)))
                            (consume :right-paren "Expect ')' after an expression.")
                            (grouping-expr expr)))

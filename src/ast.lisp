@@ -7,9 +7,11 @@
   (Broken-Binary -> (operator Token) (right Expr))
   (Grouping -> (expression Expr))
   (Literal -> value)
-  (Unary -> (operator Token) (right Expr)))
+  (Unary -> (operator Token) (right Expr))
+  (Variable -> (name Token)))
 
 ;; Abbreviation for a "statement"
 (defast stmt (:naming-convention :lisp-postfix)
   (Expression -> (expression Expr))
-  (Print -> (expression Expr)))
+  (Print -> (expression Expr))
+  (Var -> (name Token) (initializer Expr)))

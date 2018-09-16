@@ -45,18 +45,21 @@
 
 (-> run-file (string) null)
 (defun run-file (path)
-  (handler-case (run (load-file-to-string (pathname path)))
+  (handler-case (let ((interpreter (make-instance 'interpreter)))
+                  (run interpreter (load-file-to-string (pathname path))))
     (clox-runtime-error () (quit 70))))
 
 (-> run-prompt () null)
 (defun run-prompt ()
-  (loop do
+  (loop
+    with interpreter = (make-instance 'interpreter)
+    do
        (format t "~&> ")
        (force-output)
-       (run (read-line))))
+       (run interpreter (read-line))))
 
-(-> run (string) t)
-(defun run (source)
+(-> run (interpreter string) t)
+(defun run (interpreter source)
   (log:config :error)
   (let*
       (had-scanner-error
@@ -69,4 +72,4 @@
     (cond
       (had-scanner-error (quit 60))
       (had-parser-error (quit 61))
-      (t (interpret statements)))))
+      (t (interpret interpreter statements)))))
